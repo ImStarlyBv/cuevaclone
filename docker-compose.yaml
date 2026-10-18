@@ -35,6 +35,8 @@ services:
       CRAWL_RPS: ${CRAWL_RPS:-2}
       REFRESH_MARGIN_H: ${REFRESH_MARGIN_H:-6}
       DELTA_MINUTES: ${DELTA_MINUTES:-15}
+      PLAYBACK_MODE: ${PLAYBACK_MODE:-iframe}
+      SEED_BATCH: ${SEED_BATCH:-120}
     depends_on:
       db:
         condition: service_healthy

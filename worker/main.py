@@ -18,6 +18,13 @@ from app import db
 from . import jobs
 
 DELTA_MINUTES = int(os.environ.get("DELTA_MINUTES", "15"))
+
+# En modo iframe el m3u8 no se consume: el worker dedica todo el presupuesto a
+# poblar fuentes, que es lo que si hace falta para pintar los botones.
+PLAYBACK_MODE = os.environ.get("PLAYBACK_MODE", "iframe").lower()
+
+# 1.5 req/s * 90 s de turno ≈ 135. Se deja margen por los 429.
+SEED_BATCH = int(os.environ.get("SEED_BATCH", "120"))
 CATALOG_HOURS = int(os.environ.get("CATALOG_HOURS", "24"))
 
 logging.basicConfig(
@@ -77,22 +84,26 @@ async def delta_loop():
 
 
 async def resolve_loop():
-    """Resuelve sin parar: primero lo caducado, luego rellena huecos."""
+    """Rellena fuentes. En modo iframe el m3u8 no se usa, así que todo el
+    presupuesto de peticiones va a poblar fuentes en vez de a resolverlas."""
     while not _stop.is_set():
         _beat()
-        good, bad = await _run("resolve", jobs.resolve_batch, 40) or (0, 0)
 
-        # si no había nada pendiente, se ataca el poblado de fuentes
-        if good == 0 and bad == 0:
-            seeded = await _run("seed_sources", jobs.seed_sources, 25) or 0
-            if seeded == 0:
-                # nada que hacer: esperar antes de volver a mirar
-                try:
-                    await asyncio.wait_for(_stop.wait(), timeout=60)
-                except asyncio.TimeoutError:
-                    pass
-        else:
-            await asyncio.sleep(1)
+        if PLAYBACK_MODE != "iframe":
+            good, bad = await _run("resolve", jobs.resolve_batch, 40) or (0, 0)
+            if good or bad:
+                await asyncio.sleep(1)
+                continue
+
+        # El batch se dimensiona para llenar el turno sin pasar del RPS pactado:
+        # a 1.5 req/s, ~130 títulos por vuelta de dos minutos.
+        seeded = await _run("seed_sources", jobs.seed_sources, SEED_BATCH) or 0
+        if seeded == 0:
+            # nada que hacer: esperar antes de volver a mirar
+            try:
+                await asyncio.wait_for(_stop.wait(), timeout=60)
+            except asyncio.TimeoutError:
+                pass
 
 
 async def episodes_loop():
