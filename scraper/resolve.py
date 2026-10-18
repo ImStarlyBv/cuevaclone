@@ -15,7 +15,7 @@ from urllib.parse import parse_qs, urlparse
 import requests
 
 from . import unpack as unpacker
-from .client import UA, decode_server
+from .client import UA, decode_server, robust_get
 
 # Un master.m3u8 firmado por cuevana lleva e=<segundos de validez>.
 DEFAULT_TTL = 36 * 3600
@@ -77,7 +77,7 @@ def resolve(sess, source_url, timeout=30):
         raise ResolveError("decode", f"URL inválida tras decodificar: {decoded!r}")
 
     try:
-        r = sess.get(decoded, timeout=timeout, headers={"User-Agent": UA})
+        r = robust_get(sess, decoded, timeout=timeout, headers={"User-Agent": UA})
     except Exception as exc:
         raise ResolveError("embed_fetch", f"{type(exc).__name__}: {exc}")
 
@@ -119,7 +119,8 @@ def resolve(sess, source_url, timeout=30):
 def check_master(sess, m3u8_url, timeout=20):
     """Comprueba que el master responde y es HLS. Devuelve (ok, http, variantes)."""
     try:
-        r = sess.get(m3u8_url, timeout=timeout, headers={"User-Agent": UA})
+        r = robust_get(sess, m3u8_url, tries=2, timeout=timeout,
+                       headers={"User-Agent": UA})
         ok = r.status_code == 200 and "#EXTM3U" in r.text
         return ok, r.status_code, r.text.count("#EXT-X-STREAM-INF")
     except Exception:

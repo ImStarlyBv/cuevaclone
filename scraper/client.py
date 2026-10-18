@@ -59,6 +59,27 @@ def session():
     return s
 
 
+# El rate limit del origen es un balde de ~18 peticiones por cada ~10 s por IP.
+# A 2 req/s se agota y devuelve 429 durante unos 10 s. Un 429 NO es una página
+# vacía: tratarlo como tal hace que el crawler aborte creyendo que cambió el HTML.
+RETRY_STATUS = (429, 403, 500, 502, 503, 504)
+BACKOFF = (12, 20, 30)
+
+
+def robust_get(sess, url, tries=3, **kwargs):
+    """GET con reintento y backoff para 429/403/5xx. Devuelve la ultima response."""
+    import time as _t
+
+    r = None
+    for i in range(tries):
+        r = sess.get(url, **kwargs)
+        if r.status_code not in RETRY_STATUS:
+            return r
+        if i < len(BACKOFF):
+            _t.sleep(BACKOFF[i])
+    return r
+
+
 def get_html(sess, path, retries=3, delay=1.5):
     """GET con reintentos. Devuelve el HTML o lanza la ultima excepcion."""
     url = path if path.startswith("http") else BASE + path

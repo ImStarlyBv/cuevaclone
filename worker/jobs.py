@@ -16,7 +16,7 @@ from scraper.client import (
     UA,
     parse_items,
     parse_servers,
-    search,
+    robust_get,
     session,
 )
 from scraper.resolve import ResolveError, check_master, resolve
@@ -24,7 +24,7 @@ from scraper.resolve import ResolveError, check_master, resolve
 from app import db
 
 BASE = "https://cuevana3r.pro"
-RPS = float(os.environ.get("CRAWL_RPS", "2"))
+RPS = float(os.environ.get("CRAWL_RPS", "1.5"))
 REFRESH_MARGIN_H = int(os.environ.get("REFRESH_MARGIN_H", "6"))
 
 # Si una página de catálogo trae menos de esto, se considera cambio de estructura
@@ -87,12 +87,19 @@ def crawl_catalog(max_pages=None, kind="peliculas"):
         if max_pages and page > max_pages:
             break
         try:
-            r = sess.get(f"{BASE}/{kind}", params={"page": page},
-                         timeout=30, headers={"User-Agent": UA})
+            r = robust_get(sess, f"{BASE}/{kind}", params={"page": page},
+                           timeout=30, headers={"User-Agent": UA})
         except Exception as exc:
             _log(f"catalog:{kind}", False, rows=written, failed_step="fetch",
                  detail={"page": page, "error": str(exc)})
             return written
+
+        # 429 tras los reintentos = rate limit, no cambio de estructura: se corta
+        # la pasada conservando lo escrito, y la siguiente reanuda desde el inicio.
+        if r.status_code == 429:
+            _log(f"catalog:{kind}", False, rows=written, failed_step="rate_limit",
+                 detail={"page": page})
+            break
 
         items = parse_items(r.text) if r.status_code == 200 else []
         if not items:
@@ -224,8 +231,8 @@ def delta_episodes():
     t0 = time.perf_counter()
     sess = session()
     try:
-        r = sess.get(f"{BASE}/episodios/recientes", timeout=30,
-                     headers={"User-Agent": UA})
+        r = robust_get(sess, f"{BASE}/episodios/recientes", timeout=30,
+                       headers={"User-Agent": UA})
         html = r.text if r.status_code == 200 else ""
     except Exception as exc:
         _log("delta", False, failed_step="fetch", detail={"error": str(exc)})
@@ -281,8 +288,8 @@ def seed_sources(limit=25):
     for t in rows:
         path = "pelicula" if t["kind"] == "movie" else "serie"
         try:
-            r = sess.get(f"{BASE}/{path}/{t['slug']}", timeout=30,
-                         headers={"User-Agent": UA})
+            r = robust_get(sess, f"{BASE}/{path}/{t['slug']}", timeout=30,
+                           headers={"User-Agent": UA})
             if r.status_code != 200:
                 continue
             total += store_sources(t["id"], None, r.text)
@@ -311,7 +318,8 @@ def resolve_episodes(limit=20):
     n = 0
     for r in rows:
         try:
-            resp = sess.get(
+            resp = robust_get(
+                sess,
                 f"{BASE}/serie/{r['slug']}/episodio-{r['season']}x{r['episode']}",
                 timeout=30, headers={"User-Agent": UA},
             )
