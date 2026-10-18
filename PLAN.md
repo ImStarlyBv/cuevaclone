@@ -460,3 +460,38 @@ venga después se despliega en un entorno que ya se sabe que funciona.
 
 Al final del día 7 hay un sitio que un humano puede usar y Google puede crawlear. Todo lo demás es
 iteración sobre eso.
+
+---
+
+## 11. CORRECCIÓN CRÍTICA (2026-10-18, verificada en producción)
+
+El CDN **ata la firma a la IP que acuña el token**. Medido:
+
+```
+master    desde el VPS (misma IP que resolvió)   -> 200
+variante  desde el VPS                            -> 200  (174 KB)
+segmento  desde el VPS                            -> 200  (688 KB MPEG-TS)
+mismo master desde otra IP (mi máquina)           -> 403
+mismo master desde otra IP, con Referer correcto  -> 403
+```
+
+Consecuencia: **el hotlink no funciona.** No puedes resolver el m3u8 en el
+servidor y dárselo al navegador del usuario, porque el usuario tiene otra IP.
+
+Esto invalida la estimación de "ancho de banda $0" del apartado de costes.
+Los dos modos reales son:
+
+| Modo | Cómo funciona | Coste | Control de ads |
+|---|---|---|---|
+| `PLAYBACK_MODE=iframe` (actual) | el usuario carga el player original; **su** IP acuña el token | $0 | ninguno, son sus ads |
+| `PLAYBACK_MODE=proxy` | tu servidor resuelve **y** sirve los segmentos, misma IP | 1,5 Mbps por espectador concurrente | total |
+
+El proxy multiregión no es trivial: el nodo que resuelve y el nodo que sirve
+el segmento tienen que compartir IP de salida, así que no vale resolver en un
+sitio y servir desde un CDN cualquiera. Hay que proxear con el mismo egress
+(o usar un CDN que preserve la IP de origen, tipo Tunnels, y aun así con
+cuidado).
+
+Estado en producción hoy: `iframe`, que es también lo que hace cuevana.
+El trabajo del packer/XOR queda como base para el modo proxy, no como
+requisito para que el sitio funcione.

@@ -54,3 +54,10 @@ y hay que tocar el parser — no el sitio.
 ## Nota
 
 Esto scrapea infraestructura de terceros y el contenido no es propio. Es tu decisión operarlo.
+
+## Estado en producción (2026-10-18)
+
+- 16.979 películas y 3.256 series en base de datos.
+- Sitio SSR desplegado en Coolify, `/healthz` verde.
+- Reproducción en modo `iframe` (ver corrección crítica en `PLAN.md` §11).
+- El CDN de origen ata la firma a la IP: **hotlink imposible**, proxy o iframe.
