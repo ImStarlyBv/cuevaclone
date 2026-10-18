@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Últimos añadidos</h1>
+<div class="grid">
+  {% for it in items %}
+  <a class="card" href="/{{ 'pelicula' if it.kind == 'movie' else 'serie' }}/{{ it.slug }}">
+    {% if it.poster %}<img src="{{ it.poster }}" alt="{{ it.title }}" loading="lazy">{% endif %}
+    <div class="meta">
+      <span class="t">{{ it.title }}</span>
+      {% if it.year %}<span class="y">{{ it.year }}</span>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+<p class="stats">{{ stats.movies }} películas · {{ stats.series }} series · {{ stats.streams_ok }} fuentes activas</p>
+{% endblock %}

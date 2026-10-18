@@ -1,0 +1,89 @@
+:root {
+  --bg: #0e1116;
+  --panel: #161b22;
+  --line: #232a34;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #3b82f6;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: inherit; text-decoration: none; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+.top { background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
+.top .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
+.brand { font-weight: 700; font-size: 19px; color: var(--accent); }
+nav { display: flex; gap: 16px; }
+nav a { color: var(--muted); }
+nav a:hover { color: var(--text); }
+.search { margin-left: auto; display: flex; gap: 6px; }
+.search input {
+  background: var(--bg); border: 1px solid var(--line); color: var(--text);
+  padding: 7px 11px; border-radius: 7px; width: 240px;
+}
+.search button {
+  background: var(--accent); border: 0; color: #fff; padding: 7px 14px;
+  border-radius: 7px; cursor: pointer; font-weight: 600;
+}
+
+main { padding: 26px 16px 60px; }
+h1 { font-size: 24px; margin: 0 0 18px; }
+h2 { font-size: 19px; margin: 34px 0 14px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; transition: transform .12s; }
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; background: #000; }
+.card .meta { padding: 8px 9px; }
+.card .t { display: block; font-size: 13px; line-height: 1.3; }
+.card .y { color: var(--muted); font-size: 12px; }
+
+.stats { color: var(--muted); font-size: 13px; margin-top: 22px; }
+
+.detail { display: flex; gap: 22px; margin-bottom: 22px; }
+.detail .poster img { width: 190px; border-radius: 9px; }
+.detail h1 { margin-bottom: 6px; }
+.detail h1 small { color: var(--muted); font-weight: 400; }
+.rating { color: #f5c518; margin: 4px 0 10px; }
+.syn { color: var(--muted); max-width: 720px; }
+
+.player-wrap { position: relative; background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; margin-bottom: 16px; }
+.player-wrap video { width: 100%; height: 100%; display: block; }
+.status { position: absolute; inset: auto 0 0 0; padding: 9px 13px; font-size: 13px; color: var(--muted); background: linear-gradient(transparent, rgba(0,0,0,.85)); }
+.status.err { color: #f87171; }
+
+.servers { display: flex; flex-direction: column; gap: 16px; }
+.srv-group h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px; }
+.srv-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.srv {
+  background: var(--panel); border: 1px solid var(--line); color: var(--text);
+  padding: 8px 14px; border-radius: 7px; cursor: pointer; font-size: 14px;
+}
+.srv:hover { border-color: var(--accent); }
+.srv.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.srv em { color: var(--muted); font-style: normal; font-size: 12px; }
+
+.seasons, .eps { display: flex; flex-wrap: wrap; gap: 10px; }
+.season, .ep { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 11px 16px; }
+.season:hover, .ep:hover { border-color: var(--accent); }
+.season small { color: var(--muted); }
+.ep { display: flex; align-items: center; gap: 9px; }
+.ep .num { color: var(--accent); font-weight: 700; }
+.season-nav { display: flex; gap: 7px; margin-bottom: 16px; flex-wrap: wrap; }
+.season-nav a { padding: 5px 11px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; color: var(--muted); }
+.season-nav a.active { border-color: var(--accent); color: var(--text); }
+
+.pager { display: flex; gap: 14px; align-items: center; justify-content: center; margin-top: 26px; color: var(--muted); }
+.pager a { color: var(--accent); }
+.empty { color: var(--muted); }
+.foot { color: var(--muted); font-size: 12px; padding-bottom: 30px; border-top: 1px solid var(--line); padding-top: 18px; }
+
+@media (max-width: 640px) {
+  .search input { width: 130px; }
+  .detail { flex-direction: column; }
+  .detail .poster img { width: 130px; }
+}

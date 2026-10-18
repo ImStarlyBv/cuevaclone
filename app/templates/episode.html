@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ t.title }} — {{ ep.season }}x{{ ep.episode }}</h1>
+<div class="season-nav">
+  {% for s in range(1, ep.season + 1) %}
+  <a href="/serie/{{ t.slug }}/temporada/{{ s }}" class="{{ 'active' if s == ep.season else '' }}">T{{ s }}</a>
+  {% endfor %}
+</div>
+
+{% set by_lang = {} %}
+{% for s in streams %}{% set _ = by_lang.setdefault(s.language, []).append(s) %}{% endfor %}
+
+<div class="player-wrap">
+  <video id="player" controls playsinline poster="{{ t.poster or '' }}"></video>
+  <div id="status" class="status"></div>
+</div>
+
+{% if streams %}
+<div class="servers">
+  {% for lang, group in by_lang.items() %}
+  <div class="srv-group">
+    <h3>{{ lang }}</h3>
+    <div class="srv-btns">
+      {% for s in group %}
+      <button class="srv" data-id="{{ s.id }}" data-lang="{{ lang }}">
+        {{ s.server_name }}{% if s.status != 'ok' %} <em>({{ s.status }})</em>{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">Fuentes pendientes de resolución.</p>
+{% endif %}
+{% endblock %}

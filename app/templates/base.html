@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page_title %}{{ page_title }} | {% endif %}{{ site_name }}</title>
+<meta name="description" content="{{ page_title or site_name }} — películas y series online en HD.">
+<link rel="canonical" href="{{ site_url }}{{ request.url.path }}">
+<link rel="stylesheet" href="/static/style.css">
+{% block head %}{% endblock %}
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/">{{ site_name }}</a>
+    <nav>
+      <a href="/peliculas">Películas</a>
+      <a href="/series">Series</a>
+    </nav>
+    <form action="/buscar" method="get" class="search">
+      <input name="q" type="search" placeholder="Buscar películas y series…" value="{{ request.query_params.get('q','') }}" autocomplete="off">
+      <button type="submit">Buscar</button>
+    </form>
+  </div>
+</header>
+
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="wrap foot">
+  <p>{{ site_name }} — catálogo indexado.</p>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" defer></script>
+<script src="/static/player.js" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

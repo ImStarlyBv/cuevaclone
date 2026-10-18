@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block head %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Movie",
+ "name":{{ t.title|tojson }},
+ {% if t.year %}"datePublished":{{ t.year|string|tojson }},{% endif %}
+ {% if t.poster %}"image":{{ t.poster|tojson }},{% endif %}
+ {% if t.synopsis %}"description":{{ t.synopsis|tojson }},{% endif %}
+ "url":{{ (site_url ~ '/pelicula/' ~ t.slug)|tojson }}}
+</script>
+{% endblock %}
+{% block content %}
+<div class="detail">
+  <div class="poster">
+    {% if t.poster %}<img src="{{ t.poster }}" alt="{{ t.title }}">{% endif %}
+  </div>
+  <div class="info">
+    <h1>{{ t.title }} {% if t.year %}<small>({{ t.year }})</small>{% endif %}</h1>
+    {% if t.rating %}<p class="rating">★ {{ t.rating }}</p>{% endif %}
+    {% if t.synopsis %}<p class="syn">{{ t.synopsis }}</p>{% endif %}
+  </div>
+</div>
+
+{% set by_lang = {} %}
+{% for s in streams %}{% set _ = by_lang.setdefault(s.language, []).append(s) %}{% endfor %}
+
+<div class="player-wrap">
+  <video id="player" controls playsinline poster="{{ t.poster or '' }}"></video>
+  <div id="status" class="status"></div>
+</div>
+
+{% if streams %}
+<div class="servers">
+  {% for lang, group in by_lang.items() %}
+  <div class="srv-group">
+    <h3>{{ lang }}</h3>
+    <div class="srv-btns">
+      {% for s in group %}
+      <button class="srv" data-id="{{ s.id }}" data-lang="{{ lang }}">
+        {{ s.server_name }}{% if s.status != 'ok' %} <em>({{ s.status }})</em>{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">Fuentes pendientes de resolución. El worker las añadirá en la próxima pasada.</p>
+{% endif %}
+
+{% if rel %}
+<h2>Relacionadas</h2>
+<div class="grid">
+  {% for it in rel %}
+  <a class="card" href="/{{ 'pelicula' if it.kind == 'movie' else 'serie' }}/{{ it.slug }}">
+    {% if it.poster %}<img src="{{ it.poster }}" alt="{{ it.title }}" loading="lazy">{% endif %}
+    <div class="meta"><span class="t">{{ it.title }}</span></div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

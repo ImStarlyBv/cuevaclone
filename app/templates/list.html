@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ section }}</h1>
+<div class="grid">
+  {% for it in items %}
+  <a class="card" href="/{{ 'pelicula' if it.kind == 'movie' else 'serie' }}/{{ it.slug }}">
+    {% if it.poster %}<img src="{{ it.poster }}" alt="{{ it.title }}" loading="lazy">{% endif %}
+    <div class="meta">
+      <span class="t">{{ it.title }}</span>
+      {% if it.year %}<span class="y">{{ it.year }}</span>{% endif %}
+    </div>
+  </a>
+  {% else %}
+  <p>Sin resultados.</p>
+  {% endfor %}
+</div>
+
+{% if total and per_page %}
+{% set pages = ((total + per_page - 1) // per_page) %}
+{% if pages > 1 %}
+<nav class="pager">
+  {% if page > 1 %}<a href="?page={{ page - 1 }}">« Anterior</a>{% endif %}
+  <span>Página {{ page }} de {{ pages }}</span>
+  {% if page < pages %}<a href="?page={{ page + 1 }}">Siguiente »</a>{% endif %}
+</nav>
+{% endif %}
+{% endif %}
+{% endblock %}

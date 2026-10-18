@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block head %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TVSeries",
+ "name":{{ t.title|tojson }},
+ {% if t.poster %}"image":{{ t.poster|tojson }},{% endif %}
+ {% if t.synopsis %}"description":{{ t.synopsis|tojson }},{% endif %}
+ "url":{{ (site_url ~ '/serie/' ~ t.slug)|tojson }}}
+</script>
+{% endblock %}
+{% block content %}
+<div class="detail">
+  <div class="poster">
+    {% if t.poster %}<img src="{{ t.poster }}" alt="{{ t.title }}">{% endif %}
+  </div>
+  <div class="info">
+    <h1>{{ t.title }}{% if t.year %} <small>({{ t.year }})</small>{% endif %}</h1>
+    {% if t.rating %}<p class="rating">★ {{ t.rating }}</p>{% endif %}
+    {% if t.synopsis %}<p class="syn">{{ t.synopsis }}</p>{% endif %}
+  </div>
+</div>
+
+<h2>Temporadas</h2>
+<div class="seasons">
+  {% for s in seasons %}
+  <a class="season" href="/serie/{{ t.slug }}/temporada/{{ s.season }}">
+    Temporada {{ s.season }} <small>({{ s.n }} episodios)</small>
+  </a>
+  {% else %}
+  <p class="empty">Sin episodios registrados todavía.</p>
+  {% endfor %}
+</div>
+{% endblock %}

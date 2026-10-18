@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ t.title }} — Temporada {{ season }}</h1>
+<div class="season-nav">
+  {% for s in seasons %}
+  <a href="/serie/{{ t.slug }}/temporada/{{ s.season }}"
+     class="{{ 'active' if s.season == season else '' }}">T{{ s.season }}</a>
+  {% endfor %}
+</div>
+<div class="eps">
+  {% for e in eps %}
+  <a class="ep" href="/serie/{{ t.slug }}/episodio/{{ e.season }}x{{ e.episode }}">
+    <span class="num">{{ e.episode }}</span>
+    <span class="label">Episodio {{ e.episode }}</span>
+  </a>
+  {% else %}
+  <p class="empty">Sin episodios en esta temporada.</p>
+  {% endfor %}
+</div>
+{% endblock %}
