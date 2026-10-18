@@ -10,3 +10,8 @@ token.txt
 .pytest_cache/
 .DS_Store
 Thumbs.db
+d.html
+api.json
+m.m3u8
+*.ts
+failures/
