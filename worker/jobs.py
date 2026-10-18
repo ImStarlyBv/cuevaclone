@@ -136,17 +136,21 @@ def store_sources(title_id, episode_id, html):
     for group in groups:
         lang = group.get("language") or "Desconocido"
         for srv in group.get("servers", []):
+            # Los embeds de terceros no pasan por el packer: nacen como 'external'
+            # y se sirven como iframe. Si nacen 'pending' se quedan ahí para siempre.
+            kind = srv.get("type")
+            initial = "external" if kind == "embed" else "pending"
             db.execute(
                 """INSERT INTO streams (title_id, episode_id, language, server_name,
                                         kind, embed_url, status)
-                   VALUES (%s, %s, %s, %s, %s, %s, 'pending')
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (title_id, episode_id, language, server_name)
                    DO UPDATE SET kind = EXCLUDED.kind,
                                  embed_url = EXCLUDED.embed_url,
                                  status = CASE WHEN streams.status = 'dead'
                                                THEN 'pending' ELSE streams.status END""",
-                (title_id, episode_id, lang, srv["name"], srv.get("type"),
-                 srv.get("url") or srv.get("embed_url")),
+                (title_id, episode_id, lang, srv["name"], kind,
+                 srv.get("url") or srv.get("embed_url"), initial),
             )
             n += 1
     return n

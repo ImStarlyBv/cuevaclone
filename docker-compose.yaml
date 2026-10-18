@@ -38,6 +38,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      # El worker no sirve HTTP: el latido es un fichero que los bucles tocan.
+      # Si un bucle se cuelga deja de actualizarse y el contenedor se marca
+      # unhealthy, que es justo lo que queremos que pase.
+      test: ["CMD-SHELL", "test $(( $(date +%s) - $(stat -c %Y /tmp/worker.heartbeat 2>/dev/null || echo 0) )) -lt 300"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
     mem_limit: 320m
     restart: unless-stopped
 

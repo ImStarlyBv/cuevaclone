@@ -11,6 +11,7 @@ import logging
 import os
 import signal
 import sys
+import time
 
 from app import db
 
@@ -25,6 +26,18 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 log = logging.getLogger("worker")
+
+HEARTBEAT = os.environ.get("HEARTBEAT_FILE", "/tmp/worker.heartbeat")
+
+
+def _beat():
+    """Toca el latido. El healthcheck del contenedor mira su mtime: si un bucle
+    se cuelga, el fichero deja de actualizarse y Coolify lo marca unhealthy."""
+    try:
+        with open(HEARTBEAT, "w") as fh:
+            fh.write(str(int(time.time())))
+    except OSError:
+        pass
 
 _stop = asyncio.Event()
 
@@ -55,6 +68,7 @@ async def catalog_loop():
 
 async def delta_loop():
     while not _stop.is_set():
+        _beat()
         await _run("delta", jobs.delta_episodes)
         try:
             await asyncio.wait_for(_stop.wait(), timeout=DELTA_MINUTES * 60)
@@ -65,6 +79,7 @@ async def delta_loop():
 async def resolve_loop():
     """Resuelve sin parar: primero lo caducado, luego rellena huecos."""
     while not _stop.is_set():
+        _beat()
         good, bad = await _run("resolve", jobs.resolve_batch, 40) or (0, 0)
 
         # si no había nada pendiente, se ataca el poblado de fuentes
@@ -82,6 +97,7 @@ async def resolve_loop():
 
 async def episodes_loop():
     while not _stop.is_set():
+        _beat()
         await _run("resolve_episodes", jobs.resolve_episodes, 20)
         try:
             await asyncio.wait_for(_stop.wait(), timeout=600)
@@ -98,6 +114,7 @@ def main():
             log.info("marcadas %s fuentes embed como external", n)
     except Exception:
         log.exception("no se pudieron marcar las fuentes external")
+    _beat()
     log.info("worker arrancado (rps=%s, delta=%smin)", jobs.RPS, DELTA_MINUTES)
 
     loop = asyncio.new_event_loop()
