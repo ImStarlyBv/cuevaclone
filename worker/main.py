@@ -92,6 +92,12 @@ async def episodes_loop():
 def main():
     db.open_pool()
     db.init_schema()
+    try:
+        n = jobs.mark_external()
+        if n:
+            log.info("marcadas %s fuentes embed como external", n)
+    except Exception:
+        log.exception("no se pudieron marcar las fuentes external")
     log.info("worker arrancado (rps=%s, delta=%smin)", jobs.RPS, DELTA_MINUTES)
 
     loop = asyncio.new_event_loop()

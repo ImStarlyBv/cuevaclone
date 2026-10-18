@@ -183,13 +183,26 @@ def resolve_one(sess, row):
     return True, None
 
 
+def mark_external():
+    """Los embeds de terceros no pasan por el packer: se sirven como iframe.
+
+    Se marcan una vez para que el resolver no los vuelva a intentar y para que
+    la web sepa que tiene que pintarlos con <iframe> en vez de con hls.js.
+    """
+    return db.execute(
+        """UPDATE streams SET status = 'external'
+            WHERE kind = 'embed' AND status <> 'external'"""
+    )
+
+
 def resolve_batch(limit=40, only_due=True):
-    """Resuelve un lote de streams pendientes o caducados."""
+    """Resuelve un lote de fuentes token pendientes o caducadas."""
     t0 = time.perf_counter()
     if only_due:
         rows = db.q(
             """SELECT id, embed_url FROM streams
-                WHERE (status IN ('pending', 'error')
+                WHERE kind = 'token'
+                  AND (status IN ('pending', 'error')
                        OR expires_at IS NULL
                        OR expires_at < now() + make_interval(hours => %s))
                   AND embed_url IS NOT NULL
@@ -201,7 +214,7 @@ def resolve_batch(limit=40, only_due=True):
     else:
         rows = db.q(
             """SELECT id, embed_url FROM streams
-                WHERE embed_url IS NOT NULL AND fail_count < 8
+                WHERE kind = 'token' AND embed_url IS NOT NULL AND fail_count < 8
              ORDER BY resolved_at NULLS FIRST, id LIMIT %s""",
             (limit,),
         )

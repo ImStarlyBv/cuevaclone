@@ -8,6 +8,31 @@
   if (!video) return;
 
   let hls = null;
+  let iframe = null;
+
+  function clearIframe() {
+    if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    iframe = null;
+    video.style.display = "";
+  }
+
+  function playIframe(url) {
+    if (hls) { hls.destroy(); hls = null; }
+    clearIframe();
+    video.pause();
+    video.removeAttribute("src");
+    video.style.display = "none";
+    iframe = document.createElement("iframe");
+    iframe.className = "player-frame";
+    iframe.src = url;
+    iframe.setAttribute("allowfullscreen", "");
+    iframe.setAttribute("scrolling", "no");
+    iframe.setAttribute("frameborder", "0");
+    iframe.setAttribute("referrerpolicy", "origin");
+    iframe.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen");
+    video.parentNode.insertBefore(iframe, statusEl);
+    setStatus("");
+  }
 
   function setStatus(msg, isError) {
     if (!statusEl) return;
@@ -16,6 +41,7 @@
   }
 
   function play(url) {
+    clearIframe();
     if (hls) {
       hls.destroy();
       hls = null;
@@ -70,7 +96,11 @@
         setStatus(body.detail || "Servidor no disponible.", true);
         return;
       }
-      play(body.url);
+      if (body.type === "iframe") {
+        playIframe(body.url);
+      } else {
+        play(body.url);
+      }
     } catch (err) {
       setStatus("No se pudo contactar con el servidor.", true);
     }

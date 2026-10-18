@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Res
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from scraper.client import UA, parse_servers, session
+from scraper.client import UA, decode_server, parse_servers, session
 from scraper.resolve import ResolveError, check_master, resolve
 
 from . import db
@@ -164,12 +164,25 @@ def episode(request: Request, slug: str, sxe: str):
 def api_stream(stream_id: int):
     """Devuelve el master.m3u8 del servidor pedido, resolviéndolo si caducó."""
     row = db.q1(
-        """SELECT s.id, s.m3u8_url, s.expires_at, s.status, s.embed_url, s.title_id
+        """SELECT s.id, s.kind, s.m3u8_url, s.expires_at, s.status, s.embed_url, s.title_id
              FROM streams s WHERE s.id = %s""",
         (stream_id,),
     )
     if not row:
         raise HTTPException(404, "stream no encontrado")
+
+    # Los embeds de terceros no se convierten a m3u8: se pintan como iframe,
+    # que es exactamente lo que hace el sitio de origen con ellos.
+    if row["kind"] == "embed":
+        try:
+            url = decode_server(row["embed_url"])
+            if isinstance(url, dict):
+                url = url.get("url")
+        except Exception:
+            raise HTTPException(502, "no se pudo decodificar el embed")
+        if not url or not str(url).startswith("http"):
+            raise HTTPException(502, "embed inválido")
+        return {"type": "iframe", "url": url}
 
     now = int(datetime.now(timezone.utc).timestamp())
     fresh = (
@@ -179,7 +192,7 @@ def api_stream(stream_id: int):
         and int(row["expires_at"].timestamp()) > now + 300
     )
     if fresh:
-        return {"url": row["m3u8_url"], "cached": True}
+        return {"type": "hls", "url": row["m3u8_url"], "cached": True}
 
     # Resolver on-demand. Si la fila no tiene embed_url (backfill incompleto),
     # se avisa en vez de intentar adivinar.
@@ -210,7 +223,7 @@ def api_stream(stream_id: int):
             WHERE id=%s""",
         (got["m3u8_url"], got["expires_at"], stream_id),
     )
-    return {"url": got["m3u8_url"], "cached": False}
+    return {"type": "hls", "url": got["m3u8_url"], "cached": False}
 
 
 # --- sitemaps y robots ------------------------------------------------------
