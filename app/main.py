@@ -19,6 +19,15 @@ SITE_NAME = os.environ.get("SITE_NAME", "Cuevana")
 SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
 ADS_ENABLED = os.environ.get("ADS_ENABLED", "false").lower() == "true"
 
+# Hallazgo verificado: el CDN de cuevana ata la firma a la IP que acuña el token
+# (200 desde el VPS que resolvio, 403 desde cualquier otra). Consecuencia directa:
+# un m3u8 resuelto en el servidor NO se puede hotlinkear al navegador del usuario.
+#   iframe -> se embebe el player de origen y resuelve con la IP del usuario. Cero
+#             ancho de banda, funciona en cualquier pais. Es lo que hace cuevana.
+#   proxy  -> se sirven los segmentos desde este host. Solo valido si el mismo
+#             proceso resuelve Y sirve, y cuesta ~1.5 Mbps por espectador.
+PLAYBACK_MODE = os.environ.get("PLAYBACK_MODE", "iframe").lower()
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 app = FastAPI(title="cuevaclone", docs_url=None, redoc_url=None)
@@ -171,8 +180,14 @@ def api_stream(stream_id: int):
     if not row:
         raise HTTPException(404, "stream no encontrado")
 
-    # Los embeds de terceros no se convierten a m3u8: se pintan como iframe,
-    # que es exactamente lo que hace el sitio de origen con ellos.
+    # Modo iframe: tanto los embeds de terceros como los players propios se
+    # sirven como iframe. El token del player propio va tal cual, sin decodificar:
+    # es el navegador del usuario quien lo resuelve, con su IP.
+    if PLAYBACK_MODE == "iframe" and row["kind"] == "token":
+        if not row["embed_url"]:
+            raise HTTPException(409, "servidor sin fuente registrada")
+        return {"type": "iframe", "url": row["embed_url"]}
+
     if row["kind"] == "embed":
         try:
             url = decode_server(row["embed_url"])
